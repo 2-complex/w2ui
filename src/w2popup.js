@@ -599,7 +599,7 @@ var w2popup = {};
         focus: function () {
             var tmp = null;
             var pop = $('#w2ui-popup');
-            var sel = 'input:visible, button:visible, select:visible';
+            var sel = 'input:visible, button:visible, select:visible, textarea:visible';
             // clear previous blur
             $(pop).find(sel).off('.keep-focus');
             // in messar or popup
@@ -618,9 +618,10 @@ var w2popup = {};
             $(tmp).find(sel)
                 .on('blur.keep-focus', function (event) {
                     setTimeout(function () {
-                        var focus = $(pop).find(':focus');
-                        if (focus.length == 0 || focus.hasClass('w2ui-popup-hidden') || $(tmp).find(sel).index(focus) == -1) {
-                            $(tmp).find(sel)[0].focus();
+                        var focus = $(':focus');
+                        if ((focus.length > 0 && !$(tmp).find(sel).is(focus)) || focus.hasClass('w2ui-popup-hidden')) {
+                            var el = $(tmp).find(sel);
+                            if (el.length > 0) el[0].focus();
                         }
                     }, 1);
                 });
@@ -899,9 +900,12 @@ var w2confirm = function (msg, title, callBack) {
             onOpen: function () {
                 $('#w2ui-popup .w2ui-popup-message .w2ui-btn').on('click.w2confirm', function (event) {
                     w2popup.message();
-                    if (typeof options.callBack == 'function') options.callBack(event.target.id);
-                    if (event.target.id == 'Yes' && typeof options.yes_callBack == 'function') options.yes_callBack();
-                    if (event.target.id == 'No'  && typeof options.no_callBack == 'function') options.no_callBack();
+                    // need to wait for message to slide up
+                    setTimeout(function () {
+                        if (typeof options.callBack == 'function') options.callBack(event.target.id);
+                        if (event.target.id == 'Yes' && typeof options.yes_callBack == 'function') options.yes_callBack();
+                        if (event.target.id == 'No'  && typeof options.no_callBack == 'function') options.no_callBack();
+                    }, 300);
                 });
             },
             onClose: function () {

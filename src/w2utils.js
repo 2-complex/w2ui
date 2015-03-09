@@ -41,11 +41,13 @@ var w2obj = w2obj || {}; // expose object to be able to overwrite default functi
 *   - added w2utils.settings.weekStarts
 *   - onComplete should pass widget as context (this)
 *   - hidden and disabled in menus
-*   - added menu.item.hint for overlay menues
+*   - added menu.item.tooltip for overlay menues
 *   - added w2tag options.id, options.left, options.top
 *   - added w2tag options.position = top|bottom|left|right - default is right
 *   - added $().w2color(color, callBack) 
 *   - added custom colors
+*   - added w2menu.options.type = radio|check
+*   - added w2menu items.hotkey
 *
 ************************************************/
 
@@ -68,7 +70,7 @@ var w2utils = (function () {
             "shortdays"         : ["M", "T", "W", "T", "F", "S", "S"],
             "fulldays"          : ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
             "weekStarts"        : "M",      // can be "M" for Monday or "S" for Sunday
-            "dataType"          : 'HTTP',   // can be HTTP, RESTFULL, JSON (case sensative)
+            "dataType"          : 'HTTP',   // can be HTTP, RESTFULL, RESTFULLJSON, JSON (case sensative)
             "phrases"           : {},       // empty object for english phrases
             "dateStartYear"     : 1950,     // start year for date-picker
             "dateEndYear"       : 2020      // end year for date picker
@@ -851,7 +853,7 @@ var w2utils = (function () {
                 var p = w2obj.grid.prototype;
                 for (var b in p.buttons) { // buttons is an object
                     p.buttons[b].caption = w2utils.lang(p.buttons[b].caption);
-                    p.buttons[b].hint    = w2utils.lang(p.buttons[b].hint);
+                    p.buttons[b].tooltip = w2utils.lang(p.buttons[b].tooltip);
                 }
                 p.msgDelete  = w2utils.lang(p.msgDelete);
                 p.msgNotJSON = w2utils.lang(p.msgNotJSON);
@@ -1220,7 +1222,8 @@ w2utils.keyboard = (function (obj) {
 
                 var timer = setInterval(function () {
                     // monitor if destroyed
-                    if ($(el).length === 0 || ($(el).offset().left === 0 && $(el).offset().top === 0)) {
+                    if ($(el).length === 0 || ($(el).offset().left === 0 && $(el).offset().top === 0) 
+                            || $('#w2ui-tag-' + tagID).find('.w2ui-tag-body').length == 0) {
                         clearInterval($('#w2ui-tag-'+tagID).data('timer'));
                         tmp_hide();
                         return;
@@ -1228,8 +1231,9 @@ w2utils.keyboard = (function (obj) {
                     // monitor if moved
                     var posLeft  = parseInt($(el).offset().left + el.offsetWidth + (options.left ? options.left : 0));
                     var posTop   = parseInt($(el).offset().top + (options.top ? options.top : 0));
-                    var width    = $('#w2ui-tag-' + tagID).find('.w2ui-tag-body')[0].offsetWidth;
-                    var height   = $('#w2ui-tag-' + tagID).find('.w2ui-tag-body')[0].offsetHeight;
+                    var tagBody  = $('#w2ui-tag-' + tagID).find('.w2ui-tag-body');
+                    var width    = tagBody[0].offsetWidth;
+                    var height   = tagBody[0].offsetHeight;
                     if (options.position == 'top') {
                         posClass  = 'w2ui-tag-top';
                         posLeft   = parseInt($(el).offset().left + (options.left ? options.left : 0)) - 14;
@@ -1257,8 +1261,10 @@ w2utils.keyboard = (function (obj) {
                     var posClass = 'w2ui-tag-right';
                     var posLeft  = parseInt($(el).offset().left + el.offsetWidth + (options.left ? options.left : 0));
                     var posTop   = parseInt($(el).offset().top + (options.top ? options.top : 0));
-                    var width    = $('#w2ui-tag-' + tagID).find('.w2ui-tag-body')[0].offsetWidth;
-                    var height   = $('#w2ui-tag-' + tagID).find('.w2ui-tag-body')[0].offsetHeight;
+                    var tagBody  = $('#w2ui-tag-' + tagID).find('.w2ui-tag-body');
+                    if (tagBody.length == 0) return;
+                    var width    = tagBody[0].offsetWidth;
+                    var height   = tagBody[0].offsetHeight;
                     if (options.position == 'top') {
                         posClass  = 'w2ui-tag-top';
                         posLeft   = parseInt($(el).offset().left + (options.left ? options.left : 0)) - 14;
@@ -1347,7 +1353,7 @@ w2utils.keyboard = (function (obj) {
                 tmp_hide = $('#w2ui-overlay'+ name)[0].hide;
                 if (typeof tmp_hide === 'function') tmp_hide();
             } else {
-            $('#w2ui-overlay'+ name).remove();
+                $('#w2ui-overlay'+ name).remove();
             }
             return $(this);
         }
@@ -1544,11 +1550,13 @@ w2utils.keyboard = (function (obj) {
                 icon     : '',
                 count    : '',
                 hidden   : false,
+                checked  : null,
                 disabled : false
                 ...
             }
         */
         var defaults = {
+            type       : 'normal',    // can be normal, radio, check
             index      : null,        // current selected
             items      : [],
             render     : null,
@@ -1594,7 +1602,13 @@ w2utils.keyboard = (function (obj) {
             if (typeof options.select === 'function' && typeof options.onSelect !== 'function') options.onSelect = options.select;
             if (typeof options.onRender === 'function' && typeof options.render !== 'function') options.render = options.onRender;
             // since only one overlay can exist at a time
-            $.fn.w2menuHandler = function (event, index) {
+            $.fn.w2menuClick = function (event, index) {
+                if (['radio', 'check'].indexOf(options.type) != -1) {
+                    // move checkbox
+                    $(event.target).parents('tr').find('.w2ui-icon')
+                        .removeClass('w2ui-icon-empty')
+                        .addClass('w2ui-icon-check');
+                }
                 if (typeof options.onSelect === 'function') {
                     // need time so that menu first hides
                     setTimeout(function () {
@@ -1607,7 +1621,38 @@ w2utils.keyboard = (function (obj) {
                 }
                 // do not uncomment (or enum search type is not working in grid)
                 // setTimeout(function () { $(document).click(); }, 50);
+                // -- hide
+                var div = $('#w2ui-overlay'+ name);
+                if (typeof div[0].hide === 'function') {
+                    div.removeData('keepOpen');
+                    div[0].hide();
+                }
             };
+            $.fn.w2menuDown = function (event, index) {
+                var $el = $(event.target).parents('tr');
+                var tmp = $el.find('.w2ui-icon');
+                if (tmp.hasClass('w2ui-icon-empty')) {
+                    if (options.type == 'radio') {
+                        tmp.parents('table').find('.w2ui-icon')
+                            .removeClass('w2ui-icon-check')
+                            .addClass('w2ui-icon-empty');
+                    }
+                    tmp.removeClass('w2ui-icon-empty').addClass('w2ui-icon-check');
+                } else if (tmp.hasClass('w2ui-icon-check') && (options.type == 'check')) {
+                    tmp.removeClass('w2ui-icon-check').addClass('w2ui-icon-empty');
+                }
+                $el.parent().find('tr').removeClass('w2ui-selected');
+                $el.addClass('w2ui-selected');
+                $.fn.w2menuTmp = $el;
+            }
+            $.fn.w2menuOut = function (event, index) {
+                var $tmp = $($.fn.w2menuTmp);
+                if ($tmp.length > 0) {
+                    $tmp.removeClass('w2ui-selected');
+                    $tmp.find('.w2ui-icon').removeClass('w2ui-icon-check');
+                    delete $.fn.w2menuTmp;
+                }
+            }
             var html = '';
             if (options.search) {
                 html +=
@@ -1669,12 +1714,12 @@ w2utils.keyboard = (function (obj) {
             switch (key) {
                 case 13: // enter
                     $('#w2ui-overlay'+ name).remove();
-                    $.fn.w2menuHandler(event, options.index);
+                    $.fn.w2menuClick(event, options.index);
                     break;
                 case 9:  // tab
                 case 27: // escape
                     $('#w2ui-overlay'+ name).remove();
-                    $.fn.w2menuHandler(event, -1);
+                    $.fn.w2menuClick(event, -1);
                     break;
                 case 38: // up
                     options.index = w2utils.isInt(options.index) ? parseInt(options.index) : 0;
@@ -1745,6 +1790,9 @@ w2utils.keyboard = (function (obj) {
                     if (img  == null) img  = null;
                     if (icon == null) icon = null;
                 }
+                if (['radio', 'check'].indexOf(options.type) != -1) {
+                    if (mitem.checked === true) icon = 'w2ui-icon-check'; else icon = 'w2ui-icon-empty';
+                }
                 if (mitem.hidden !== true) {
                     var imgd = '';
                     var txt = mitem.text;
@@ -1757,23 +1805,30 @@ w2utils.keyboard = (function (obj) {
                         if (options.altRows !== true) bg = '';
                         var colspan = 1;
                         if (imgd == '') colspan++;
-                        if (mitem.count == null) colspan++;
+                        if (mitem.count == null && mitem.hotkey == null) colspan++;
+                        if (mitem.tooltip == null && mitem.hint != null) mitem.tooltip = mitem.hint; // for backward compatibility
                         menu_html +=
-                            '<tr index="'+ f + '" style="'+ (mitem.style ? mitem.style : '') +'" '+ (mitem.hint ? 'title="'+ mitem.hint +'"' : '') +
+                            '<tr index="'+ f + '" style="'+ (mitem.style ? mitem.style : '') +'" '+ (mitem.tooltip ? 'title="'+ mitem.tooltip +'"' : '') +
                             '        class="'+ bg +' '+ (options.index === f ? 'w2ui-selected' : '') + ' ' + (mitem.disabled === true ? 'w2ui-disabled' : '') +'"'+
-                            '        onmousedown="$(this).parent().find(\'tr\').removeClass(\'w2ui-selected\'); $(this).addClass(\'w2ui-selected\');"'+
+                            '        onmousedown="if ('+ (mitem.disabled === true ? 'true' : 'false') + ') return;'+
+                            '               $.fn.w2menuDown(event, \''+ f +'\');"'+
+                            '        onmouseout="if ('+ (mitem.disabled === true ? 'true' : 'false') + ') return;'+
+                            '               $.fn.w2menuOut(event, \''+ f +'\');"'+
                             '        onclick="event.stopPropagation(); '+
                             '               if ('+ (mitem.disabled === true ? 'true' : 'false') + ') return;'+
-                            '               $(\'#w2ui-overlay'+ name +'\').remove(); '+
-                            '               $.fn.w2menuHandler(event, \''+ f +'\');">'+
+                            '               $.fn.w2menuClick(event, \''+ f +'\');">'+
                                 imgd +
                             '   <td class="menu-text" colspan="'+ colspan +'">'+ txt +'</td>'+
-                            '   <td class="menu-count">'+ (mitem.count != null ? '<span>' + mitem.count + '</span>' : '') + '</td>' +
+                            '   <td class="menu-count">'+ 
+                                    (mitem.count != null ? '<span>' + mitem.count + '</span>' : '') + 
+                                    (mitem.hotkey != null ? '<span class="hotkey">' + mitem.hotkey + '</span>' : '') + 
+                            '</td>' +
                             '</tr>';
                         count++;
+                        console.log(mitem.hotkey);
                     } else {
                         // horizontal line
-                        menu_html += '<tr><td colspan="2" style="padding: 6px; pointer-events: none"><div style="border-top: 1px solid silver;"></div></td></tr>';
+                        menu_html += '<tr><td colspan="3" style="padding: 6px; pointer-events: none"><div style="border-top: 1px solid silver;"></div></td></tr>';
                     }
                 }
                 options.items[f] = mitem;
