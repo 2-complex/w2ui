@@ -44,7 +44,7 @@ var w2obj = w2obj || {}; // expose object to be able to overwrite default functi
 *   - added menu.item.tooltip for overlay menues
 *   - added w2tag options.id, options.left, options.top
 *   - added w2tag options.position = top|bottom|left|right - default is right
-*   - added $().w2color(color, callBack) 
+*   - added $().w2color(color, callBack)
 *   - added custom colors
 *   - added w2menu.options.type = radio|check
 *   - added w2menu items.hotkey
@@ -430,7 +430,7 @@ var w2utils = (function () {
         }
         // older formats support
         if (fmt[1] == 'h12') fmt[1] = 'h:m pm';
-        if (fmt[1] == 'h24') fmt[1] = 'h24:m';        
+        if (fmt[1] == 'h24') fmt[1] = 'h24:m';
         return this.formatDate(dateStr, fmt[0]) + ' ' + this.formatTime(dateStr, fmt[1]);
     }
 
@@ -745,7 +745,7 @@ var w2utils = (function () {
         }, time * 1000);
 
         function cross(property, value, none_webkit_value) {
-            var isWebkit=!!window.webkitURL; // jQuery no longer supports $.browser - RR
+            var isWebkit=!!window.URL; // jQuery no longer supports $.browser - RR
             if (!isWebkit && typeof none_webkit_value !== 'undefined') value = none_webkit_value;
             return ';'+ property +': '+ value +'; -webkit-'+ property +': '+ value +'; -moz-'+ property +': '+ value +'; '+
                 '-ms-'+ property +': '+ value +'; -o-'+ property +': '+ value +';';
@@ -1214,7 +1214,7 @@ w2utils.keyboard = (function (obj) {
                 $('#w2ui-tag-'+tagID).remove();
                 // insert
                 $('body').append(
-                    '<div id="w2ui-tag-'+ tagOrigID +'" class="w2ui-tag '+ ($(el).parents('.w2ui-popup').length > 0 ? 'w2ui-tag-popup' : '') + '">'+ 
+                    '<div id="w2ui-tag-'+ tagOrigID +'" class="w2ui-tag '+ ($(el).parents('.w2ui-popup').length > 0 ? 'w2ui-tag-popup' : '') + '">'+
                     '   <div style="margin-top: -2px 0px 0px -2px; white-space: nowrap;">'+
                     '      <div class="w2ui-tag-body">'+ text +'</div>'+
                     '   </div>' +
@@ -1222,7 +1222,7 @@ w2utils.keyboard = (function (obj) {
 
                 var timer = setInterval(function () {
                     // monitor if destroyed
-                    if ($(el).length === 0 || ($(el).offset().left === 0 && $(el).offset().top === 0) 
+                    if ($(el).length === 0 || ($(el).offset().left === 0 && $(el).offset().top === 0)
                             || $('#w2ui-tag-' + tagID).find('.w2ui-tag-body').length == 0) {
                         clearInterval($('#w2ui-tag-'+tagID).data('timer'));
                         tmp_hide();
@@ -1819,9 +1819,9 @@ w2utils.keyboard = (function (obj) {
                             '               $.fn.w2menuClick(event, \''+ f +'\');">'+
                                 imgd +
                             '   <td class="menu-text" colspan="'+ colspan +'">'+ txt +'</td>'+
-                            '   <td class="menu-count">'+ 
-                                    (mitem.count != null ? '<span>' + mitem.count + '</span>' : '') + 
-                                    (mitem.hotkey != null ? '<span class="hotkey">' + mitem.hotkey + '</span>' : '') + 
+                            '   <td class="menu-count">'+
+                                    (mitem.count != null ? '<span>' + mitem.count + '</span>' : '') +
+                                    (mitem.hotkey != null ? '<span class="hotkey">' + mitem.hotkey + '</span>' : '') +
                             '</td>' +
                             '</tr>';
                         count++;
@@ -1864,7 +1864,7 @@ w2utils.keyboard = (function (obj) {
         if (color) color = String(color).toUpperCase();
 
         if ($('#w2ui-overlay').length == 0) {
-            $(el).w2overlay(getColorHTML(color), { 
+            $(el).w2overlay(getColorHTML(color), {
                 onHide: function () {
                     if (typeof callBack == 'function') callBack($(el).data('_color'));
                     $(el).removeData('_color');
@@ -1915,7 +1915,7 @@ w2utils.keyboard = (function (obj) {
                 case 'down':
                     index[0]++;
                     break;
-                case 'right': 
+                case 'right':
                     index[1]++;
                     break;
                 case 'left':
@@ -1960,7 +1960,7 @@ w2utils.keyboard = (function (obj) {
                     '<tr><td style="height: 4px" colspan="8"></td></tr>';
             html += '</table></div>';
             return html;
-        }        
+        }
     };
 
 })();
